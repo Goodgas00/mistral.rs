@@ -3,21 +3,21 @@ use anyhow::Result;
 #[cfg(feature = "metal")]
 include!("src/metal/kernels/source_set.rs");
 
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 const CUDA_NVCC_FLAGS: Option<&'static str> = option_env!("CUDA_NVCC_FLAGS");
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 const FA3_CUTLASS_COMMIT: &str = "62750a2b75c802660e4894434dc55e839f322277";
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 const FA3_SOURCES: [&str; 4] = [
     "src/cuda/fa3/fa3_decode_api.cu",
     "third_party/flash-attention/hopper/instantiations/flash_fwd_hdim256_e4m3_paged_split_sm90.cu",
     "third_party/flash-attention/hopper/flash_fwd_combine.cu",
     "third_party/flash-attention/hopper/flash_prepare_scheduler.cu",
 ];
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 const CUDA_BUILD_ROOT_ENV: &str = "MISTRALRS_CUDA_BUILD_ROOT";
 
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 fn cuda_build_dir(out_dir: &std::path::Path, component: &str) -> std::path::PathBuf {
     println!("cargo:rerun-if-env-changed={CUDA_BUILD_ROOT_ENV}");
     let Some(root) = std::env::var_os(CUDA_BUILD_ROOT_ENV) else {
@@ -30,7 +30,7 @@ fn cuda_build_dir(out_dir: &std::path::Path, component: &str) -> std::path::Path
     build_dir
 }
 
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 fn prepare_cuda_archive(path: std::path::PathBuf) -> std::path::PathBuf {
     if std::env::var_os(CUDA_BUILD_ROOT_ENV).is_some() {
         // Shared objects can be newer than this Cargo build directory's archive.
@@ -43,7 +43,7 @@ fn prepare_cuda_archive(path: std::path::PathBuf) -> std::path::PathBuf {
     path
 }
 
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 fn cuda_header_hash(dir: &str, excluded_dirs: &[&str]) -> Result<u64> {
     use std::path::Path;
 
@@ -90,7 +90,7 @@ fn cuda_header_hash(dir: &str, excluded_dirs: &[&str]) -> Result<u64> {
     Ok(hash)
 }
 
-#[cfg(all(feature = "cuda", target_family = "unix"))]
+#[cfg(all(feature = "cuda", any(target_family = "unix", target_os = "windows")))]
 fn main() -> Result<()> {
     use std::path::PathBuf;
 
@@ -264,7 +264,8 @@ fn main() -> Result<(), String> {
     mistralrs_metal_compile::compile_metallibs(&PAGED_ATTENTION_METAL_SOURCE_SET)
 }
 
-#[cfg(not(any(all(feature = "cuda", target_family = "unix"), feature = "metal")))]
+#[cfg(not(any(all(feature = "cuda", any(target_family = "unix", target_os = "windows")),
+              feature = "metal")))]
 fn main() -> Result<()> {
     // Declare expected cfg values for check-cfg lint
     println!("cargo::rustc-check-cfg=cfg(has_fp8)");
